@@ -716,6 +716,12 @@ metrics -> pandas.Dataframe
 
 </details>
 
+
+## Sponsor Phitter
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-donate-yellow?style=for-the-badge&logo=buy-me-a-coffee)](https://buymeacoffee.com/sebastianjhm)
+
+
 ## Contribution
 
 All contributions and collaborations are welcome!
