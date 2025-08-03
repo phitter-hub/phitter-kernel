@@ -47,7 +47,7 @@ dependencies = [
 [project.urls]
 Homepage = "https://phitter.io"
 Documentation = "https://docs-phitter-kernel.netlify.app/"
-Repository = "https://github.com/phitter-core/phitter-kernel"
+Repository = "https://github.com/phitter-hub/phitter-kernel"
 
 [tool.setuptools]
 packages = [
