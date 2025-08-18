@@ -7,9 +7,7 @@
 </p>
 
 <p align="center">
-    <a href="https://pypi.org/project/phitter" target="_blank">
-        <img src="https://img.shields.io/pypi/dm/phitter.svg?color=blue" alt="Downloads">
-    </a>
+    <a href="https://pepy.tech/projects/phitter"><img src="https://static.pepy.tech/badge/phitter/month" alt="PyPI Downloads"></a>
     <a href="https://pypi.org/project/phitter" target="_blank">
         <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License">
     </a>
@@ -23,7 +21,6 @@
         <img src="https://github.com/phitter-hub/phitter-kernel/actions/workflows/unittest.yml/badge.svg" alt="Tests">
     </a>
 </p>
-
 
 <p align="center">
     ⭐⭐⭐ <em>If you find this project useful, giving it a star on GitHub. It really helps!</em> ⭐⭐⭐
@@ -67,8 +64,8 @@ pip install phitter
 
 ### **_1. Fit Notebook's Tutorials_**
 
-|             Tutorial             |                                                                                                                      Notebooks                                                                                                                      |
-| :------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|             Tutorial             |                                                                                                                     Notebooks                                                                                                                      |
+| :------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 |        **Fit Continuous**        |    <a target="_blank" href="https://colab.research.google.com/github/phitter-hub/phitter-kernel/blob/main/examples/fit/fit_continuous_ncdb.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>    |
 |         **Fit Discrete**         | <a target="_blank" href="https://colab.research.google.com/github/phitter-hub/phitter-kernel/blob/main/examples/fit/fit_discrete_galton_board.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
 | **Fit Accelerate [Sample>100K]** |      <a target="_blank" href="https://colab.research.google.com/github/phitter-hub/phitter-kernel/blob/main/examples/fit/fit_accelerate.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>       |
@@ -77,8 +74,8 @@ pip install phitter
 
 ### **_2. Simulation Notebook's Tutorials_**
 
-|                     Tutorial                      |                                                                                                                           Notebooks                                                                                                                           |
-| :-----------------------------------------------: | :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|                     Tutorial                      |                                                                                                                          Notebooks                                                                                                                           |
+| :-----------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 |              **Process Simulation**               |      <a target="_blank" href="https://colab.research.google.com/github/phitter-hub/phitter-kernel/blob/main/examples/simulation/process_simulation.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>      |
 |               **Own Distribution**                | <a target="_blank" href="https://colab.research.google.com/github/phitter-hub/phitter-kernel/blob/main/examples/simulation/own_distribution_explanation.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
 |  **Queue Simulation First-In-First-Out (FIFO)**   |    <a target="_blank" href="https://colab.research.google.com/github/phitter-hub/phitter-kernel/blob/main/examples/simulation/queue_simulation_fifo.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>     |
@@ -294,8 +291,8 @@ distribution.mode # -> 733.3333333333333
 
 #### 2. Resources Continuous Distributions
 
-| Distribution              | Phitter Playground                                                                                     | Excel File                                                                                                                      | Google Sheets Files                                                                                                |
-| :------------------------ | :----------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------ | :----------------------------------------------------------------------------------------------------------------- |
+| Distribution              | Phitter Playground                                                                                     | Excel File                                                                                                                     | Google Sheets Files                                                                                                |
+| :------------------------ | :----------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------- |
 | alpha                     | ▶️[phitter:alpha](https://phitter.io/distributions/continuous/alpha)                                   | 📊[alpha.xlsx](https://github.com/phitter-hub/phitter-files/blob/main/continuous/alpha.xlsx)                                   | 🌐[gs:alpha](https://docs.google.com/spreadsheets/d/1yRovxx1YbqgEul65DjjXetysc_4qgX2a_2NQQA1AxCA)                  |
 | arcsine                   | ▶️[phitter:arcsine](https://phitter.io/distributions/continuous/arcsine)                               | 📊[arcsine.xlsx](https://github.com/phitter-hub/phitter-files/blob/main/continuous/arcsine.xlsx)                               | 🌐[gs:arcsine](https://docs.google.com/spreadsheets/d/1q8SKX4gmSbpGzimRvjopzaZ4KrEV5NY1EPmf1G1T7NQ)                |
 | argus                     | ▶️[phitter:argus](https://phitter.io/distributions/continuous/argus)                                   | 📊[argus.xlsx](https://github.com/phitter-hub/phitter-files/blob/main/continuous/argus.xlsx)                                   | 🌐[gs:argus](https://docs.google.com/spreadsheets/d/1u2x7IFUSB7rEyhs7s6-C2btT1Bk5aCr4WiUYEML-8xs)                  |
@@ -376,8 +373,8 @@ distribution.mode # -> 733.3333333333333
 
 #### 2. Resources Discrete Distributions
 
-| Distribution      | Phitter Playground                                                                           | Excel File                                                                                                          | Google Sheets Files                                                                                           |
-| :---------------- | :------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------ |
+| Distribution      | Phitter Playground                                                                           | Excel File                                                                                                         | Google Sheets Files                                                                                           |
+| :---------------- | :------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------ |
 | bernoulli         | ▶️[phitter:bernoulli](https://phitter.io/distributions/continuous/bernoulli)                 | 📊[bernoulli.xlsx](https://github.com/phitter-hub/phitter-files/blob/main/discrete/bernoulli.xlsx)                 | 🌐[gs:bernoulli](https://docs.google.com/spreadsheets/d/1sWJZYZWW8cVLFXYV-fb3Lq4y2YgWzgTGWHfhIJ0zM5c)         |
 | binomial          | ▶️[phitter:binomial](https://phitter.io/distributions/continuous/binomial)                   | 📊[binomial.xlsx](https://github.com/phitter-hub/phitter-files/blob/main/discrete/binomial.xlsx)                   | 🌐[gs:binomial](https://docs.google.com/spreadsheets/d/1bPOiZVUhjLMmbFqVjWMqg1NzTvsZxVIw95fi5hIhkn0)          |
 | geometric         | ▶️[phitter:geometric](https://phitter.io/distributions/continuous/geometric)                 | 📊[geometric.xlsx](https://github.com/phitter-hub/phitter-files/blob/main/discrete/geometric.xlsx)                 | 🌐[gs:geometric](https://docs.google.com/spreadsheets/d/1cEU6n8UxpJ_Had6WfFnAXZ2FcaLGYu8g5srQ_iEfjgg)         |
@@ -716,11 +713,9 @@ metrics -> pandas.Dataframe
 
 </details>
 
-
 ## Sponsor Phitter
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-donate-yellow?style=for-the-badge&logo=buy-me-a-coffee)](https://buymeacoffee.com/sebastianjhm)
-
 
 ## Contribution
 
