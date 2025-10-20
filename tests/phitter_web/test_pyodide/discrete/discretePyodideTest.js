@@ -35,7 +35,7 @@ async function main() {
         tf = time.time()
         print(f"Execution time: {tf - ti}")
 
-        sorted_distributions_sse = phitter_discrete.sorted_distributions_sse
+        sorted_distributions = phitter_discrete.sorted_distributions
         not_rejected_distributions = phitter_discrete.not_rejected_distributions
 
         for distribution, results in not_rejected_distributions.items():

@@ -882,9 +882,30 @@ class PhitterDiscrete:
         self.minimum_sse = minimum_sse
         self.distribution_results = {}
         self.none_results = {"test_statistic": None, "critical_value": None, "p_value": None, "rejected": None}
-        self.sorted_distributions_sse = None
+        self.sorted_distributions = None
         self.not_rejected_distributions = None
         self.distribution_instances = None
+
+    def log_likelihood(self, distribution, eps=1e-300) -> float:
+        x = self.discrete_measures.data
+        p = distribution.pmf(x)
+        bad = ~numpy.isfinite(p) | (p <= 0)
+        if bad.mean() > 0.01:
+            domain = self.discrete_measures.domain
+            counts = self.discrete_measures.absolutes_frequencies
+            probs = distribution.pmf(domain)
+            probs = numpy.clip(numpy.nan_to_num(probs, nan=0.0, posinf=0.0, neginf=0.0), eps, 1.0)
+            return float(numpy.sum(counts * numpy.log(probs)))
+        p = numpy.clip(numpy.nan_to_num(p, nan=0.0, posinf=0.0, neginf=0.0), eps, None)
+        return float(numpy.sum(numpy.log(p)))
+
+    def get_aic_and_bic(self, distribution) -> tuple[float, float]:
+        ll = self.log_likelihood(distribution)
+        k = distribution.num_parameters
+        n = self.discrete_measures.size
+        aic = 2.0 * k - 2.0 * ll
+        bic = k * numpy.log(n) - 2.0 * ll
+        return aic, bic
 
     def test(self, test_function, label: str, distribution):
         validation_test = False
@@ -919,6 +940,9 @@ class PhitterDiscrete:
             v1 = self.test(evaluate_discrete_test_chi_square, "chi_square", distribution)
             v2 = self.test(evaluate_discrete_test_kolmogorov_smirnov, "kolmogorov_smirnov", distribution)
             if v1 or v2:
+                aic, bic = self.get_aic_and_bic(distribution)
+                self.distribution_results["aic"] = aic
+                self.distribution_results["bic"] = bic
                 self.distribution_results["sse"] = sse
                 self.distribution_results["parameters"] = distribution.parameters
                 self.distribution_results["n_test_passed"] = int(self.distribution_results["chi_square"]["rejected"] == False) + int(self.distribution_results["kolmogorov_smirnov"]["rejected"] == False)
@@ -935,8 +959,8 @@ class PhitterDiscrete:
             executor = concurrent.futures.ProcessPoolExecutor(max_workers=n_workers)
             processing_results = list(executor.map(self.process_distribution, self.distributions_to_fit))
         processing_results = [r for r in processing_results if r is not None]
-        self.sorted_distributions_sse = {distribution: results for distribution, results, _ in sorted(processing_results, key=lambda x: (-x[1]["n_test_passed"], x[1]["sse"]))}
-        self.not_rejected_distributions = {distribution: results for distribution, results in self.sorted_distributions_sse.items() if results["n_test_passed"] > 0}
+        self.sorted_distributions = {distribution: results for distribution, results, _ in sorted(processing_results, key=lambda x: (-x[1]["n_test_passed"], x[1]["sse"]))}
+        self.not_rejected_distributions = {distribution: results for distribution, results in self.sorted_distributions.items() if results["n_test_passed"] > 0}
         self.distribution_instances = {distribution: instance for distribution, _, instance in processing_results}
 
     def parse_rgba_color(self, rgba_string):
@@ -1013,7 +1037,7 @@ class PhitterDiscrete:
         densities_frequencies = self.discrete_measures.densities_frequencies
         fig = go.Figure()
         fig.add_trace(go.Bar(x=domain, y=densities_frequencies, marker_color=plot_bar_color, name="Data", showlegend=False))
-        for idx, (id_distribution, result) in enumerate(list(self.sorted_distributions_sse.items())[:n_distributions]):
+        for idx, (id_distribution, result) in enumerate(list(self.sorted_distributions.items())[:n_distributions]):
             y_plot = self.distribution_instances[id_distribution].pmf(domain)
             distribution_sse = result["sse"]
             is_visible = True if idx + 1 <= n_distributions_visible else "legendonly"
@@ -1057,7 +1081,7 @@ class PhitterDiscrete:
         densities_frequencies = self.discrete_measures.densities_frequencies
         plt.figure(figsize=(plot_width / 100, plot_height / 100))
         plt.bar(domain, densities_frequencies, color=self.parse_rgba_color(plot_bar_color))
-        for idx, (id_distribution, result) in enumerate(list(self.sorted_distributions_sse.items())[:n_distributions]):
+        for idx, (id_distribution, result) in enumerate(list(self.sorted_distributions.items())[:n_distributions]):
             y_plot = self.distribution_instances[id_distribution].pmf(domain)
             distribution_sse = result["sse"]
             is_rejected = "✓" if id_distribution in self.not_rejected_distributions else ""
@@ -1094,7 +1118,7 @@ class PhitterDiscrete:
         fig = go.Figure()
         fig.add_trace(go.Bar(x=domain, y=densities_frequencies, marker_color=plot_bar_color, name="Data", showlegend=True))
         y_plot = self.distribution_instances[id_distribution].pmf(domain)
-        distribution_sse = self.sorted_distributions_sse[id_distribution]["sse"]
+        distribution_sse = self.sorted_distributions[id_distribution]["sse"]
         is_rejected = "✅" if id_distribution in self.not_rejected_distributions else ""
         scatter_name = f"{id_distribution}: {distribution_sse:.4E}{is_rejected}"
         scatter_line = dict(color=plot_line_color, width=plot_line_width)
@@ -1139,7 +1163,7 @@ class PhitterDiscrete:
         plt.figure(figsize=(plot_width / 100, plot_height / 100))
         plt.bar(domain, densities_frequencies, label="Data", color=self.parse_rgba_color(plot_bar_color))
         y_plot = self.distribution_instances[id_distribution].pmf(domain)
-        distribution_sse = self.sorted_distributions_sse[id_distribution]["sse"]
+        distribution_sse = self.sorted_distributions[id_distribution]["sse"]
         is_rejected = "✓" if id_distribution in self.not_rejected_distributions else ""
         scatter_name = f"{id_distribution}: {distribution_sse:.4E}{is_rejected}"
         try:
@@ -1232,7 +1256,7 @@ class PhitterDiscrete:
         fig = go.Figure()
         fig.add_trace(go.Bar(x=domain, y=ecdf_frequencies, marker_color=plot_empirical_bar_color, name="Empirical Distribution", showlegend=True))
         y_plot = self.distribution_instances[id_distribution].cdf(domain)
-        distribution_sse = self.sorted_distributions_sse[id_distribution]["sse"]
+        distribution_sse = self.sorted_distributions[id_distribution]["sse"]
         is_rejected = "✅" if id_distribution in self.not_rejected_distributions else ""
         try:
             fig.add_trace(
@@ -1284,7 +1308,7 @@ class PhitterDiscrete:
         plt.bar(domain, ecdf_frequencies, label="Data", color=self.parse_rgba_color(plot_empirical_bar_color))
         domain = self.discrete_measures.domain
         y_plot = self.distribution_instances[id_distribution].cdf(domain)
-        distribution_sse = self.sorted_distributions_sse[id_distribution]["sse"]
+        distribution_sse = self.sorted_distributions[id_distribution]["sse"]
         is_rejected = "✓" if id_distribution in self.not_rejected_distributions else ""
         scatter_name = f"{id_distribution}: {distribution_sse:.4E}{is_rejected}"
         try:

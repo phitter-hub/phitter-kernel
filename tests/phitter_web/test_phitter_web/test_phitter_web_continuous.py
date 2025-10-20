@@ -21,5 +21,5 @@ if __name__ == "__main__":
     phi = PhitterContinuous(data)
     phi.fit(n_workers=2)
 
-    for distribution, results in phi.sorted_distributions_sse.items():
+    for distribution, results in phi.sorted_distributions.items():
         print(f"Distribution: {distribution}, SSE: {results['sse']}, Aprobados: {results['n_test_passed']}")

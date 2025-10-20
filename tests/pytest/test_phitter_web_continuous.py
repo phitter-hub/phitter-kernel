@@ -28,4 +28,4 @@ def test_phitter_analysis(random_file_path):
     phi = PhitterContinuous(data)
     phi.fit(n_workers=2)
 
-    assert len(phi.sorted_distributions_sse) > 0, "sorted_distributions_sse should not be empty"
+    assert len(phi.sorted_distributions) > 0, "sorted_distributions should not be empty"

@@ -115,16 +115,16 @@ class Phitter:
 
     @property
     def best_distribution(self):
-        id_distribution = list(self.sorted_distributions_sse.keys())[0]
-        return {"id": id_distribution, "parameters": self.sorted_distributions_sse[id_distribution]["parameters"]}
+        id_distribution = list(self.sorted_distributions.keys())[0]
+        return {"id": id_distribution, "parameters": self.sorted_distributions[id_distribution]["parameters"]}
 
     @property
-    def sorted_distributions_sse(self):
+    def sorted_distributions(self):
         if self.fit_type == "continuous":
-            return self.phitter_continuous.sorted_distributions_sse
+            return self.phitter_continuous.sorted_distributions
 
         if self.fit_type == "discrete":
-            return self.phitter_discrete.sorted_distributions_sse
+            return self.phitter_discrete.sorted_distributions
 
     @property
     def not_rejected_distributions(self):
@@ -135,39 +135,39 @@ class Phitter:
             return self.phitter_discrete.not_rejected_distributions
 
     def get_parameters(self, id_distribution: str) -> dict:
-        if id_distribution not in self.sorted_distributions_sse:
+        if id_distribution not in self.sorted_distributions:
             raise Exception(f"{id_distribution} distribution not founded")
-        return self.sorted_distributions_sse[id_distribution]["parameters"]
+        return self.sorted_distributions[id_distribution]["parameters"]
 
     def get_test_chi_square(self, id_distribution: str) -> dict:
-        if id_distribution not in self.sorted_distributions_sse:
+        if id_distribution not in self.sorted_distributions:
             raise Exception(f"{id_distribution} distribution not founded")
-        return self.sorted_distributions_sse[id_distribution]["chi_square"]
+        return self.sorted_distributions[id_distribution]["chi_square"]
 
     def get_test_kolmogorov_smirnov(self, id_distribution: str) -> dict:
-        if id_distribution not in self.sorted_distributions_sse:
+        if id_distribution not in self.sorted_distributions:
             raise Exception(f"{id_distribution} distribution not founded")
-        return self.sorted_distributions_sse[id_distribution]["kolmogorov_smirnov"]
+        return self.sorted_distributions[id_distribution]["kolmogorov_smirnov"]
 
     def get_test_anderson_darling(self, id_distribution: str) -> dict:
-        if id_distribution not in self.sorted_distributions_sse:
+        if id_distribution not in self.sorted_distributions:
             raise Exception(f"{id_distribution} distribution not founded")
-        return self.sorted_distributions_sse[id_distribution]["anderson_darling"]
+        return self.sorted_distributions[id_distribution]["anderson_darling"]
 
     def get_sse(self, id_distribution: str) -> float:
-        if id_distribution not in self.sorted_distributions_sse:
+        if id_distribution not in self.sorted_distributions:
             raise Exception(f"{id_distribution} distribution not founded")
-        return self.sorted_distributions_sse[id_distribution]["sse"]
+        return self.sorted_distributions[id_distribution]["sse"]
 
     def get_n_test_passed(self, id_distribution: str) -> int:
-        if id_distribution not in self.sorted_distributions_sse:
+        if id_distribution not in self.sorted_distributions:
             raise Exception(f"{id_distribution} distribution not founded")
-        return self.sorted_distributions_sse[id_distribution]["n_test_passed"]
+        return self.sorted_distributions[id_distribution]["n_test_passed"]
 
     def get_n_test_null(self, id_distribution: str) -> int:
-        if id_distribution not in self.sorted_distributions_sse:
+        if id_distribution not in self.sorted_distributions:
             raise Exception(f"{id_distribution} distribution not founded")
-        return self.sorted_distributions_sse[id_distribution]["n_test_null"]
+        return self.sorted_distributions[id_distribution]["n_test_null"]
 
     def dict_to_dataframe(self, data: dict[str, dict]) -> pandas.DataFrame:
         flat_data = []
@@ -192,11 +192,13 @@ class Phitter:
     def summarize(self, k: int = 20):
         if self.fit_type == "continuous":
             summarize = []
-            for id_distribution, info in self.phitter_continuous.sorted_distributions_sse.items():
+            for id_distribution, info in self.phitter_continuous.sorted_distributions.items():
                 summarize.append(
                     {
                         "distribution": id_distribution,
-                        "sse": info["sse"],
+                        # "sse": info["sse"],
+                        "aic": info["aic"],
+                        "bic": info["bic"],
                         "parameters": ", ".join([f"{k}: {v:.4g}" for k, v in info["parameters"].items()]),
                         "chi_square": "✅" if info["chi_square"]["rejected"] == False else "✖️",
                         "kolmogorov_smirnov": "✅" if info["kolmogorov_smirnov"]["rejected"] == False else "✖️",
@@ -207,11 +209,13 @@ class Phitter:
 
         if self.fit_type == "discrete":
             summarize = []
-            for id_distribution, info in self.phitter_discrete.sorted_distributions_sse.items():
+            for id_distribution, info in self.phitter_discrete.sorted_distributions.items():
                 summarize.append(
                     {
                         "distribution": id_distribution,
-                        "sse": info["sse"],
+                        # "sse": info["sse"],
+                        "aic": info["aic"],
+                        "bic": info["bic"],
                         "parameters": ", ".join([f"{k}: {v:.4g}" for k, v in info["parameters"].items()]),
                         "chi_square": "✅" if info["chi_square"]["rejected"] == False else "✖️",
                         "kolmogorov_smirnov": "✅" if info["kolmogorov_smirnov"]["rejected"] == False else "✖️",
@@ -222,11 +226,13 @@ class Phitter:
     def summarize_info(self, k: int = 10):
         if self.fit_type == "continuous":
             summarize = []
-            for id_distribution, info in self.phitter_continuous.sorted_distributions_sse.items():
+            for id_distribution, info in self.phitter_continuous.sorted_distributions.items():
                 summarize.append(
                     {
                         "distribution": id_distribution,
-                        "sse": info["sse"],
+                        # "sse": info["sse"],
+                        "aic": info["aic"],
+                        "bic": info["bic"],
                         "parameters": info["parameters"],
                         "chi_square": info["chi_square"]["rejected"],
                         "kolmogorov_smirnov": info["kolmogorov_smirnov"]["rejected"],
@@ -237,11 +243,13 @@ class Phitter:
 
         if self.fit_type == "discrete":
             summarize = []
-            for id_distribution, info in self.phitter_discrete.sorted_distributions_sse.items():
+            for id_distribution, info in self.phitter_discrete.sorted_distributions.items():
                 summarize.append(
                     {
                         "distribution": id_distribution,
-                        "sse": info["sse"],
+                        # "sse": info["sse"],
+                        "aic": info["aic"],
+                        "bic": info["bic"],
                         "parameters": info["parameters"],
                         "chi_square": info["chi_square"]["rejected"],
                         "kolmogorov_smirnov": info["kolmogorov_smirnov"]["rejected"],
@@ -250,17 +258,19 @@ class Phitter:
             return pandas.DataFrame(summarize).head(k)
 
     @property
-    def df_sorted_distributions_sse(self) -> pandas.DataFrame | None:
+    def df_sorted_distributions(self) -> pandas.DataFrame | None:
         if self.fit_type == "continuous":
-            if self.phitter_continuous.sorted_distributions_sse is None:
+            if self.phitter_continuous.sorted_distributions is None:
                 return None
-            if len(self.phitter_continuous.sorted_distributions_sse) == 0:
+            if len(self.phitter_continuous.sorted_distributions) == 0:
                 return pandas.DataFrame(
                     columns=pandas.MultiIndex.from_tuples(
                         [
                             ("distribution", ""),
                             ("passed", ""),
-                            ("sse", ""),
+                            # ("sse", ""),
+                            ("aic", ""),
+                            ("bic", ""),
                             ("parameters", ""),
                             ("chi_square", "test_statistic"),
                             ("chi_square", "critical_value"),
@@ -277,19 +287,21 @@ class Phitter:
                         ]
                     )
                 )
-            df = self.dict_to_dataframe(self.phitter_continuous.sorted_distributions_sse)
-            return df[["distribution", "passed", "sse", "parameters", "chi_square", "kolmogorov_smirnov", "anderson_darling"]]
+            df = self.dict_to_dataframe(self.phitter_continuous.sorted_distributions)
+            return df[["distribution", "passed", "aic", "bic", "parameters", "chi_square", "kolmogorov_smirnov", "anderson_darling"]]
 
         if self.fit_type == "discrete":
-            if self.phitter_discrete.sorted_distributions_sse is None:
+            if self.phitter_discrete.sorted_distributions is None:
                 return None
-            if len(self.phitter_discrete.sorted_distributions_sse) == 0:
+            if len(self.phitter_discrete.sorted_distributions) == 0:
                 return pandas.DataFrame(
                     columns=pandas.MultiIndex.from_tuples(
                         [
                             ("distribution", ""),
                             ("passed", ""),
-                            ("sse", ""),
+                            # ("sse", ""),
+                            ("aic", ""),
+                            ("bic", ""),
                             ("parameters", ""),
                             ("chi_square", "test_statistic"),
                             ("chi_square", "critical_value"),
@@ -302,8 +314,8 @@ class Phitter:
                         ]
                     )
                 )
-            df = self.dict_to_dataframe(self.phitter_discrete.sorted_distributions_sse)
-            return df[["distribution", "passed", "sse", "parameters", "chi_square", "kolmogorov_smirnov"]]
+            df = self.dict_to_dataframe(self.phitter_discrete.sorted_distributions)
+            return df[["distribution", "passed", "aic", "bic", "parameters", "chi_square", "kolmogorov_smirnov"]]
 
     @property
     def df_not_rejected_distributions(self) -> pandas.DataFrame | None:
@@ -316,7 +328,9 @@ class Phitter:
                         [
                             ("distribution", ""),
                             ("passed", ""),
-                            ("sse", ""),
+                            # ("sse", ""),
+                            ("aic", ""),
+                            ("bic", ""),
                             ("parameters", ""),
                             ("chi_square", "test_statistic"),
                             ("chi_square", "critical_value"),
@@ -334,7 +348,7 @@ class Phitter:
                     )
                 )
             df = self.dict_to_dataframe(self.phitter_continuous.not_rejected_distributions)
-            return df[["distribution", "sse", "parameters", "chi_square", "kolmogorov_smirnov", "anderson_darling"]]
+            return df[["distribution", "aic", "bic", "parameters", "chi_square", "kolmogorov_smirnov", "anderson_darling"]]
 
         if self.fit_type == "discrete":
             if self.phitter_discrete.not_rejected_distributions is None:
@@ -345,7 +359,9 @@ class Phitter:
                         [
                             ("distribution", ""),
                             ("passed", ""),
-                            ("sse", ""),
+                            # ("sse", ""),
+                            ("aic", ""),
+                            ("bic", ""),
                             ("parameters", ""),
                             ("chi_square", "test_statistic"),
                             ("chi_square", "critical_value"),
@@ -359,7 +375,7 @@ class Phitter:
                     )
                 )
             df = self.dict_to_dataframe(self.phitter_discrete.not_rejected_distributions)
-            return df[["distribution", "sse", "parameters", "chi_square", "kolmogorov_smirnov"]]
+            return df[["distribution", "aic", "bic", "parameters", "chi_square", "kolmogorov_smirnov"]]
 
     def plot_histogram(
         self,
@@ -587,6 +603,7 @@ class Phitter:
         plot_width=600,
         plot_line_color="rgba(255,0,0,1)",
         plot_line_width=2,
+        plot_empirical_bargap=0.15,
         plot_line_name="Empirical Distribution",
         plot_bar_color="rgba(128,128,128,1)",
         plotly_plot_renderer: typing.Literal["png", "jpeg", "svg"] | None = None,
@@ -643,6 +660,7 @@ class Phitter:
                     plot_height=plot_height,
                     plot_width=plot_width,
                     plot_bar_color=plot_bar_color,
+                    plot_empirical_bargap=plot_empirical_bargap,
                     plotly_plot_renderer=plotly_plot_renderer,
                 )
 
@@ -908,5 +926,5 @@ if __name__ == "__main__":
 
     print(f"Best Distribution: {phitter.best_distribution}")
 
-    for distribution, results in phitter.sorted_distributions_sse.items():
+    for distribution, results in phitter.sorted_distributions.items():
         print(f"Distribution: {distribution}, SSE: {results['sse']}, Aprobados: {results['n_test_passed']}")

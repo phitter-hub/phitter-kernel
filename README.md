@@ -156,9 +156,9 @@ phi.fit(n_workers=2)
 phi.summarize(k: int) -> pandas.DataFrame
 phi.summarize_info(k: int) -> pandas.DataFrame
 phi.best_distribution -> dict
-phi.sorted_distributions_sse -> dict
+phi.sorted_distributions -> dict
 phi.not_rejected_distributions -> dict
-phi.df_sorted_distributions_sse -> pandas.DataFrame
+phi.df_sorted_distributions -> pandas.DataFrame
 phi.df_not_rejected_distributions -> pandas.DataFrame
 
 ## Specific distribution methods and properties
