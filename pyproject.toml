@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "phitter"
-version = "1.0.3"
+version = "1.0.4"
 description = "Find the best probability distribution for your dataset and simulate processes and queues"
 authors = [
     {name = "Sebastián José Herrera Monterrosa", email = "phitter.email@gmail.com"},

@@ -1,6 +1,7 @@
 from .alpha import Alpha
 from .arcsine import Arcsine
 from .argus import Argus
+from .bates import Bates
 from .beta import Beta
 from .beta_prime import BetaPrime
 from .beta_prime_4p import BetaPrime4P
@@ -17,6 +18,7 @@ from .erlang_3p import Erlang3P
 from .error_function import ErrorFunction
 from .exponential import Exponential
 from .exponential_2p import Exponential2P
+from .exponentiated_kumaraswamy import ExponentiatedKumaraswamy
 from .f import F
 from .f_4p import F4P
 from .fatigue_life import FatigueLife
@@ -50,6 +52,7 @@ from .loglogistic import LogLogistic
 from .loglogistic_3p import LogLogistic3P
 from .lognormal import LogNormal
 from .maxwell import Maxwell
+from .mcdonald import McDonald
 from .moyal import Moyal
 from .nakagami import Nakagami
 from .non_central_chi_square import NonCentralChiSquare
@@ -64,6 +67,7 @@ from .rayleigh import Rayleigh
 from .reciprocal import Reciprocal
 from .rice import Rice
 from .semicircular import Semicircular
+from .topp_leone import ToppLeone
 from .t_student import TStudent
 from .t_student_3p import TStudent3P
 from .trapezoidal import Trapezoidal
@@ -76,6 +80,7 @@ CONTINUOUS_DISTRIBUTIONS = {
     "alpha": Alpha,
     "arcsine": Arcsine,
     "argus": Argus,
+    "bates": Bates,
     "beta": Beta,
     "beta_prime": BetaPrime,
     "beta_prime_4p": BetaPrime4P,
@@ -92,6 +97,7 @@ CONTINUOUS_DISTRIBUTIONS = {
     "error_function": ErrorFunction,
     "exponential": Exponential,
     "exponential_2p": Exponential2P,
+    "exponentiated_kumaraswamy": ExponentiatedKumaraswamy,
     "f": F,
     "fatigue_life": FatigueLife,
     "folded_normal": FoldedNormal,
@@ -125,6 +131,7 @@ CONTINUOUS_DISTRIBUTIONS = {
     "loglogistic_3p": LogLogistic3P,
     "lognormal": LogNormal,
     "maxwell": Maxwell,
+    "mcdonald": McDonald,
     "moyal": Moyal,
     "nakagami": Nakagami,
     "non_central_chi_square": NonCentralChiSquare,
@@ -139,6 +146,7 @@ CONTINUOUS_DISTRIBUTIONS = {
     "reciprocal": Reciprocal,
     "rice": Rice,
     "semicircular": Semicircular,
+    "topp_leone": ToppLeone,
     "trapezoidal": Trapezoidal,
     "triangular": Triangular,
     "t_student": TStudent,
