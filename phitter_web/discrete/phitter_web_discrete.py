@@ -1,6 +1,7 @@
 import concurrent.futures
 import numpy
 import scipy.optimize
+import scipy.special
 import scipy.stats
 import typing
 
@@ -186,6 +187,99 @@ class Binomial:
         p = 1 - discrete_measures.variance / discrete_measures.mean
         n = int(round(discrete_measures.mean / p, 0))
         parameters = {"n": n, "p": p}
+        return parameters
+
+
+class DiscreteLaplace:
+    def __init__(
+        self,
+        parameters: dict[str, int | float] = None,
+        discrete_measures=None,
+        init_parameters_examples=False,
+    ):
+        if discrete_measures is None and parameters is None and init_parameters_examples == False:
+            raise Exception("You must initialize the distribution by either providing the Discrete Measures [DiscreteMeasures] instance or a dictionary of the distribution's parameters.")
+        if discrete_measures != None:
+            self.parameters = self.get_parameters(discrete_measures=discrete_measures)
+        if parameters != None:
+            self.parameters = parameters
+        if init_parameters_examples:
+            self.parameters = self.parameters_example
+        self.a = self.parameters["a"]
+        self.loc = self.parameters["loc"]
+
+    @property
+    def name(self):
+        return "discrete_laplace"
+
+    @property
+    def parameters_example(self) -> dict[str, int | float]:
+        return {"a": 0.6, "loc": 50}
+
+    def cdf(self, x: int | numpy.ndarray) -> float | numpy.ndarray:
+        return scipy.stats.dlaplace.cdf(x, self.a, loc=self.loc)
+
+    def pmf(self, x: int | numpy.ndarray) -> float | numpy.ndarray:
+        return scipy.stats.dlaplace.pmf(x, self.a, loc=self.loc)
+
+    def ppf(self, u: float | numpy.ndarray) -> float | numpy.ndarray:
+        return scipy.stats.dlaplace.ppf(u, self.a, loc=self.loc)
+
+    def sample(self, n: int, seed: int | None = None) -> numpy.ndarray:
+        if seed:
+            numpy.random.seed(seed)
+        return self.ppf(numpy.random.rand(n))
+
+    def non_central_moments(self, k: int) -> float | None:
+        return None
+
+    def central_moments(self, k: int) -> float | None:
+        return None
+
+    @property
+    def mean(self) -> float:
+        return self.loc
+
+    @property
+    def variance(self) -> float:
+        y = numpy.exp(-self.a)
+        return 2 * y / (1 - y) ** 2
+
+    @property
+    def standard_deviation(self) -> float:
+        return numpy.sqrt(self.variance)
+
+    @property
+    def skewness(self) -> float:
+        return 0
+
+    @property
+    def kurtosis(self) -> float:
+        return 5 + numpy.cosh(self.a)
+
+    @property
+    def median(self) -> float:
+        return self.loc
+
+    @property
+    def mode(self) -> float:
+        return self.loc
+
+    @property
+    def num_parameters(self) -> int:
+        return len(self.parameters)
+
+    def parameter_restrictions(self) -> bool:
+        v1 = self.a > 0
+        return v1
+
+    def get_parameters(self, discrete_measures) -> dict[str, float | int]:
+        loc = int(round(discrete_measures.mean))
+        v = max(discrete_measures.variance, 1e-12)
+        y = ((v + 1) - numpy.sqrt(2 * v + 1)) / v
+        y = min(max(y, 1e-12), 1 - 1e-12)
+        a = -numpy.log(y)
+        parameters = {"a": a, "loc": loc}
         return parameters
 
 
@@ -668,6 +762,102 @@ class Poisson:
         return parameters
 
 
+class Skellam:
+    def __init__(
+        self,
+        parameters: dict[str, int | float] = None,
+        discrete_measures=None,
+        init_parameters_examples=False,
+    ):
+        if discrete_measures is None and parameters is None and init_parameters_examples == False:
+            raise Exception("You must initialize the distribution by either providing the Discrete Measures [DiscreteMeasures] instance or a dictionary of the distribution's parameters.")
+        if discrete_measures != None:
+            self.parameters = self.get_parameters(discrete_measures=discrete_measures)
+        if parameters != None:
+            self.parameters = parameters
+        if init_parameters_examples:
+            self.parameters = self.parameters_example
+        self.lambda1 = self.parameters["lambda1"]
+        self.lambda2 = self.parameters["lambda2"]
+
+    @property
+    def name(self):
+        return "skellam"
+
+    @property
+    def parameters_example(self) -> dict[str, int | float]:
+        return {"lambda1": 8, "lambda2": 3}
+
+    def cdf(self, x: int | numpy.ndarray) -> float | numpy.ndarray:
+        result = scipy.stats.skellam.cdf(x, self.lambda1, self.lambda2)
+        return result
+
+    def pmf(self, x: int | numpy.ndarray) -> float | numpy.ndarray:
+        result = scipy.stats.skellam.pmf(x, self.lambda1, self.lambda2)
+        return result
+
+    def ppf(self, u: float | numpy.ndarray) -> float | numpy.ndarray:
+        result = scipy.stats.skellam.ppf(u, self.lambda1, self.lambda2)
+        return result
+
+    def sample(self, n: int, seed: int | None = None) -> numpy.ndarray:
+        if seed:
+            numpy.random.seed(seed)
+        return self.ppf(numpy.random.rand(n))
+
+    def non_central_moments(self, k: int) -> float | None:
+        return None
+
+    def central_moments(self, k: int) -> float | None:
+        return None
+
+    @property
+    def mean(self) -> float:
+        return self.lambda1 - self.lambda2
+
+    @property
+    def variance(self) -> float:
+        return self.lambda1 + self.lambda2
+
+    @property
+    def standard_deviation(self) -> float:
+        return numpy.sqrt(self.variance)
+
+    @property
+    def skewness(self) -> float:
+        return (self.lambda1 - self.lambda2) / (self.lambda1 + self.lambda2) ** 1.5
+
+    @property
+    def kurtosis(self) -> float:
+        return 3 + 1 / (self.lambda1 + self.lambda2)
+
+    @property
+    def median(self) -> float:
+        return self.ppf(0.5)
+
+    @property
+    def mode(self) -> float:
+        center = self.lambda1 - self.lambda2
+        candidates = numpy.array([int(numpy.floor(center)), int(numpy.ceil(center))])
+        pmfs = self.pmf(candidates)
+        return float(candidates[int(numpy.argmax(pmfs))])
+
+    @property
+    def num_parameters(self) -> int:
+        return len(self.parameters)
+
+    def parameter_restrictions(self) -> bool:
+        v1 = self.lambda1 > 0
+        v2 = self.lambda2 > 0
+        return v1 and v2
+
+    def get_parameters(self, discrete_measures) -> dict[str, float | int]:
+        lambda1 = (discrete_measures.variance + discrete_measures.mean) / 2
+        lambda2 = (discrete_measures.variance - discrete_measures.mean) / 2
+        parameters = {"lambda1": lambda1, "lambda2": lambda2}
+        return parameters
+
+
 class Uniform:
     def __init__(
         self,
@@ -765,11 +955,13 @@ class Uniform:
 DISCRETE_DISTRIBUTIONS = {
     "bernoulli": Bernoulli,
     "binomial": Binomial,
+    "discrete_laplace": DiscreteLaplace,
     "geometric": Geometric,
     "hypergeometric": Hypergeometric,
     "logarithmic": Logarithmic,
     "negative_binomial": NegativeBinomial,
     "poisson": Poisson,
+    "skellam": Skellam,
     "uniform": Uniform,
 }
 
@@ -1185,7 +1377,7 @@ class PhitterDiscrete:
         plot_height: int,
         plot_width: int,
         plot_bar_color: str,
-        plot_bargap: float,
+        plot_empirical_bargap: float,
         plotly_plot_renderer: typing.Literal["png", "jpeg", "svg"] | None,
     ):
         domain = self.discrete_measures.domain
@@ -1203,7 +1395,7 @@ class PhitterDiscrete:
             xaxis=dict(title_font_size=12, tickfont=dict(size=10)),
             yaxis=dict(title_font_size=12, tickfont=dict(size=10)),
             legend=dict(orientation="v", yanchor="auto", y=1, xanchor="left", font=dict(size=10)),
-            bargap=plot_bargap,
+            bargap=plot_empirical_bargap,
         )
         fig.show(renderer=plotly_plot_renderer)
 

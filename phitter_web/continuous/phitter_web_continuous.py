@@ -370,6 +370,168 @@ class Argus:
         return parameters
 
 
+class Bates:
+    def __init__(
+        self,
+        parameters: dict[str, int | float] = None,
+        continuous_measures=None,
+        init_parameters_examples=False,
+    ):
+        if continuous_measures is None and parameters is None and init_parameters_examples == False:
+            raise ValueError("You must initialize the distribution by providing one of the following: distribution parameters, a Continuous Measures [ContinuousMeasures] instance, or by setting init_parameters_examples to True.")
+        if continuous_measures != None:
+            self.parameters = self.get_parameters(continuous_measures=continuous_measures)
+        if parameters != None:
+            self.parameters = parameters
+        if init_parameters_examples:
+            self.parameters = self.parameters_example
+        self.n = self.parameters["n"]
+        self.min = self.parameters["min"]
+        self.max = self.parameters["max"]
+
+    @property
+    def name(self):
+        return "bates"
+
+    @property
+    def parameters_example(self) -> dict[str, int | float]:
+        return {"n": 5, "min": 2, "max": 10}
+
+    def _n_int(self) -> int:
+        return max(1, int(round(self.n)))
+
+    def cdf(self, x: float | numpy.ndarray) -> float | numpy.ndarray:
+        n = self._n_int()
+        z = (numpy.asarray(x, dtype=float) - self.min) / (self.max - self.min)
+        y = numpy.clip(z, 0.0, 1.0) * n
+        result = numpy.zeros_like(y)
+        flat_y = y.ravel()
+        flat_res = numpy.zeros_like(flat_y)
+        for idx, yi in enumerate(flat_y):
+            kmax = int(numpy.floor(yi))
+            total = 0.0
+            for k in range(kmax + 1):
+                total += ((-1) ** k) * scipy.special.comb(n, k) * (yi - k) ** n
+            flat_res[idx] = total / scipy.special.factorial(n)
+        result = flat_res.reshape(y.shape)
+        result = numpy.where(z <= 0, 0.0, result)
+        result = numpy.where(z >= 1, 1.0, result)
+        if result.ndim == 0:
+            return float(result)
+        return result
+
+    def pdf(self, x: float | numpy.ndarray) -> float | numpy.ndarray:
+        n = self._n_int()
+        z = (numpy.asarray(x, dtype=float) - self.min) / (self.max - self.min)
+        y = z * n
+        flat_y = y.ravel()
+        flat_res = numpy.zeros_like(flat_y)
+        for idx, yi in enumerate(flat_y):
+            if yi <= 0 or yi >= n:
+                flat_res[idx] = 0.0
+                continue
+            kmax = int(numpy.floor(yi))
+            total = 0.0
+            for k in range(kmax + 1):
+                total += ((-1) ** k) * scipy.special.comb(n, k) * (yi - k) ** (n - 1)
+            flat_res[idx] = total / scipy.special.factorial(n - 1)
+        result_0_1 = flat_res.reshape(y.shape)
+        result = (n / (self.max - self.min)) * result_0_1
+        if result.ndim == 0:
+            return float(result)
+        return result
+
+    def ppf(self, u: float | numpy.ndarray) -> float | numpy.ndarray:
+        u = numpy.asarray(u, dtype=float)
+        flat_u = u.ravel()
+        flat_res = numpy.zeros_like(flat_u)
+        for idx, ui in enumerate(flat_u):
+            if ui <= 0:
+                flat_res[idx] = self.min
+                continue
+            if ui >= 1:
+                flat_res[idx] = self.max
+                continue
+            f = lambda xv: float(self.cdf(xv)) - ui
+            flat_res[idx] = scipy.optimize.brentq(f, self.min, self.max)
+        result = flat_res.reshape(u.shape)
+        if result.ndim == 0:
+            return float(result)
+        return result
+
+    def sample(self, n: int, seed: int | None = None) -> numpy.ndarray:
+        if seed:
+            numpy.random.seed(seed)
+        n_int = self._n_int()
+        u = numpy.random.rand(n, n_int).mean(axis=1)
+        return self.min + (self.max - self.min) * u
+
+    def non_central_moments(self, k: int) -> float | None:
+        return None
+
+    def central_moments(self, k: int) -> float | None:
+        n = self.n
+        if k == 1:
+            return 0
+        if k == 2:
+            return 1 / (12 * n)
+        if k == 3:
+            return 0
+        if k == 4:
+            return (3 * n + 2) / (80 * n**3)
+        return None
+
+    @property
+    def mean(self) -> float:
+        return (self.min + self.max) / 2
+
+    @property
+    def variance(self) -> float:
+        return (self.max - self.min) ** 2 / (12 * self.n)
+
+    @property
+    def standard_deviation(self) -> float:
+        return numpy.sqrt(self.variance)
+
+    @property
+    def skewness(self) -> float:
+        return 0
+
+    @property
+    def kurtosis(self) -> float:
+        return 3 - 6 / (5 * self.n)
+
+    @property
+    def median(self) -> float:
+        return (self.min + self.max) / 2
+
+    @property
+    def mode(self) -> float:
+        return (self.min + self.max) / 2
+
+    @property
+    def num_parameters(self) -> int:
+        return len(self.parameters)
+
+    def parameter_restrictions(self) -> bool:
+        v1 = self.n >= 1
+        v2 = self.min < self.max
+        return v1 and v2
+
+    def get_parameters(self, continuous_measures) -> dict[str, float | int]:
+        kurt = continuous_measures.kurtosis
+        if kurt < 3 and kurt > 3 - 6 / 5:
+            n_est = 6 / (5 * (3 - kurt))
+        else:
+            n_est = max(1.0, (continuous_measures.max - continuous_measures.min) ** 2 / (12 * continuous_measures.variance))
+        n_est = max(1.0, n_est)
+        half_range = numpy.sqrt(12 * n_est * continuous_measures.variance) / 2
+        min_ = continuous_measures.mean - half_range
+        max_ = continuous_measures.mean + half_range
+        parameters = {"n": n_est, "min": min_, "max": max_}
+        return parameters
+
+
 class Beta:
     def __init__(
         self,
@@ -2164,6 +2326,176 @@ class Exponential2P:
         lambda_ = (1 - numpy.log(2)) / (continuous_measures.mean - continuous_measures.median)
         loc = continuous_measures.min - 1e-4
         parameters = {"lambda": lambda_, "loc": loc}
+        return parameters
+
+
+class ExponentiatedKumaraswamy:
+    def __init__(
+        self,
+        parameters: dict[str, int | float] = None,
+        continuous_measures=None,
+        init_parameters_examples=False,
+    ):
+        if continuous_measures is None and parameters is None and init_parameters_examples == False:
+            raise ValueError("You must initialize the distribution by providing one of the following: distribution parameters, a Continuous Measures [ContinuousMeasures] instance, or by setting init_parameters_examples to True.")
+        if continuous_measures != None:
+            self.parameters = self.get_parameters(continuous_measures=continuous_measures)
+        if parameters != None:
+            self.parameters = parameters
+        if init_parameters_examples:
+            self.parameters = self.parameters_example
+        self.alpha = self.parameters["alpha"]
+        self.beta = self.parameters["beta"]
+        self.lambda_ = self.parameters["lambda"]
+        self.min = self.parameters["min"]
+        self.max = self.parameters["max"]
+
+    @property
+    def name(self):
+        return "exponentiated_kumaraswamy"
+
+    @property
+    def parameters_example(self) -> dict[str, int | float]:
+        return {"alpha": 3, "beta": 4, "lambda": 2, "min": 5, "max": 15}
+
+    def cdf(self, x: float | numpy.ndarray) -> float | numpy.ndarray:
+        z = lambda t: (t - self.min) / (self.max - self.min)
+        return (1 - (1 - z(x) ** self.alpha) ** self.beta) ** self.lambda_
+
+    def pdf(self, x: float | numpy.ndarray) -> float | numpy.ndarray:
+        z = lambda t: (t - self.min) / (self.max - self.min)
+        zx = z(x)
+        result = (self.alpha * self.beta * self.lambda_ * zx ** (self.alpha - 1) * (1 - zx**self.alpha) ** (self.beta - 1) * (1 - (1 - zx**self.alpha) ** self.beta) ** (self.lambda_ - 1)) / (self.max - self.min)
+        return result
+
+    def ppf(self, u: float | numpy.ndarray) -> float | numpy.ndarray:
+        result = self.min + (self.max - self.min) * (1 - (1 - u ** (1 / self.lambda_)) ** (1 / self.beta)) ** (1 / self.alpha)
+        return result
+
+    def sample(self, n: int, seed: int | None = None) -> numpy.ndarray:
+        if seed:
+            numpy.random.seed(seed)
+        return self.ppf(numpy.random.rand(n))
+
+    def non_central_moments(self, k: int) -> float | None:
+        total = 0.0
+        for j in range(200):
+            term = ((-1) ** j) * scipy.special.binom(k / self.alpha, j) * scipy.special.beta(j / self.beta + 1, self.lambda_)
+            total += term
+            if j > 20 and abs(term) < 1e-16 * max(1.0, abs(total)):
+                break
+        return self.lambda_ * total
+
+    def central_moments(self, k: int) -> float | None:
+        µ1 = self.non_central_moments(1)
+        µ2 = self.non_central_moments(2)
+        µ3 = self.non_central_moments(3)
+        µ4 = self.non_central_moments(4)
+        if k == 1:
+            return 0
+        if k == 2:
+            return µ2 - µ1**2
+        if k == 3:
+            return µ3 - 3 * µ1 * µ2 + 2 * µ1**3
+        if k == 4:
+            return µ4 - 4 * µ1 * µ3 + 6 * µ1**2 * µ2 - 3 * µ1**4
+        return None
+
+    @property
+    def mean(self) -> float:
+        µ1 = self.non_central_moments(1)
+        return self.min + (self.max - self.min) * µ1
+
+    @property
+    def variance(self) -> float:
+        µ1 = self.non_central_moments(1)
+        µ2 = self.non_central_moments(2)
+        return (self.max - self.min) ** 2 * (µ2 - µ1**2)
+
+    @property
+    def standard_deviation(self) -> float:
+        return numpy.sqrt(self.variance)
+
+    @property
+    def skewness(self) -> float:
+        central_µ3 = self.central_moments(3)
+        µ1 = self.non_central_moments(1)
+        µ2 = self.non_central_moments(2)
+        std = numpy.sqrt(µ2 - µ1**2)
+        return central_µ3 / std**3
+
+    @property
+    def kurtosis(self) -> float:
+        central_µ4 = self.central_moments(4)
+        µ1 = self.non_central_moments(1)
+        µ2 = self.non_central_moments(2)
+        std = numpy.sqrt(µ2 - µ1**2)
+        return central_µ4 / std**4
+
+    @property
+    def median(self) -> float:
+        return self.ppf(0.5)
+
+    @property
+    def mode(self) -> float:
+        standard_pdf = lambda z: -(self.alpha * self.beta * self.lambda_ * z ** (self.alpha - 1) * (1 - z**self.alpha) ** (self.beta - 1) * (1 - (1 - z**self.alpha) ** self.beta) ** (self.lambda_ - 1))
+        res = scipy.optimize.minimize_scalar(standard_pdf, bounds=(1e-6, 1 - 1e-6), method="bounded")
+        return self.min + (self.max - self.min) * res.x
+
+    @property
+    def num_parameters(self) -> int:
+        return len(self.parameters)
+
+    def parameter_restrictions(self) -> bool:
+        v1 = self.alpha > 0
+        v2 = self.beta > 0
+        v3 = self.lambda_ > 0
+        v4 = self.min < self.max
+        return v1 and v2 and v3 and v4
+
+    def get_parameters(self, continuous_measures) -> dict[str, float | int]:
+        def E(k, alpha, beta, lambda_):
+            total = 0.0
+            for j in range(200):
+                term = ((-1) ** j) * scipy.special.binom(k / alpha, j) * scipy.special.beta(j / beta + 1, lambda_)
+                total += term
+                if j > 20 and abs(term) < 1e-16 * max(1.0, abs(total)):
+                    break
+            return lambda_ * total
+
+        def equations(initial_solution: tuple[float], continuous_measures) -> tuple[float]:
+            alpha, beta, lambda_, min_, max_ = initial_solution
+            e1 = E(1, alpha, beta, lambda_)
+            e2 = E(2, alpha, beta, lambda_)
+            e3 = E(3, alpha, beta, lambda_)
+            e4 = E(4, alpha, beta, lambda_)
+            parametric_mean = e1 * (max_ - min_) + min_
+            parametric_variance = (e2 - e1**2) * (max_ - min_) ** 2
+            parametric_skewness = (e3 - 3 * e2 * e1 + 2 * e1**3) / ((e2 - e1**2)) ** 1.5
+            parametric_kurtosis = (e4 - 4 * e1 * e3 + 6 * e1**2 * e2 - 3 * e1**4) / ((e2 - e1**2)) ** 2
+            z_med = (1 - (1 - 0.5 ** (1 / lambda_)) ** (1 / beta)) ** (1 / alpha)
+            parametric_median = min_ + (max_ - min_) * z_med
+            eq1 = parametric_mean - continuous_measures.mean
+            eq2 = parametric_variance - continuous_measures.variance
+            eq3 = parametric_skewness - continuous_measures.skewness
+            eq4 = parametric_kurtosis - continuous_measures.kurtosis
+            eq5 = parametric_median - continuous_measures.median
+            return (eq1, eq2, eq3, eq4, eq5)
+
+        bounds = (
+            (1e-5, 1e-5, 1e-5, -numpy.inf, continuous_measures.mean),
+            (numpy.inf, numpy.inf, numpy.inf, continuous_measures.mean, numpy.inf),
+        )
+        x0 = (1, 1, 1, continuous_measures.min - 1e-3, continuous_measures.max + 1e-3)
+        args = [continuous_measures]
+        solution = scipy.optimize.least_squares(equations, x0=x0, bounds=bounds, args=args)
+        parameters = {
+            "alpha": solution.x[0],
+            "beta": solution.x[1],
+            "lambda": solution.x[2],
+            "min": solution.x[3],
+            "max": solution.x[4],
+        }
         return parameters
 
 
@@ -5787,6 +6119,165 @@ class Maxwell:
         return parameters
 
 
+class McDonald:
+    def __init__(
+        self,
+        parameters: dict[str, int | float] = None,
+        continuous_measures=None,
+        init_parameters_examples=False,
+    ):
+        if continuous_measures is None and parameters is None and init_parameters_examples == False:
+            raise ValueError("You must initialize the distribution by providing one of the following: distribution parameters, a Continuous Measures [ContinuousMeasures] instance, or by setting init_parameters_examples to True.")
+        if continuous_measures != None:
+            self.parameters = self.get_parameters(continuous_measures=continuous_measures)
+        if parameters != None:
+            self.parameters = parameters
+        if init_parameters_examples:
+            self.parameters = self.parameters_example
+        self.a = self.parameters["a"]
+        self.b = self.parameters["b"]
+        self.c = self.parameters["c"]
+        self.min = self.parameters["min"]
+        self.max = self.parameters["max"]
+
+    @property
+    def name(self):
+        return "mcdonald"
+
+    @property
+    def parameters_example(self) -> dict[str, int | float]:
+        return {"a": 3, "b": 4, "c": 2, "min": 5, "max": 15}
+
+    def cdf(self, x: float | numpy.ndarray) -> float | numpy.ndarray:
+        z = lambda t: (t - self.min) / (self.max - self.min)
+        return scipy.special.betainc(self.a, self.b, z(x) ** self.c)
+
+    def pdf(self, x: float | numpy.ndarray) -> float | numpy.ndarray:
+        z = lambda t: (t - self.min) / (self.max - self.min)
+        zx = z(x)
+        result = (self.c / scipy.special.beta(self.a, self.b)) * zx ** (self.a * self.c - 1) * (1 - zx**self.c) ** (self.b - 1) / (self.max - self.min)
+        return result
+
+    def ppf(self, u: float | numpy.ndarray) -> float | numpy.ndarray:
+        z_val = scipy.special.betaincinv(self.a, self.b, u) ** (1 / self.c)
+        return self.min + (self.max - self.min) * z_val
+
+    def sample(self, n: int, seed: int | None = None) -> numpy.ndarray:
+        if seed:
+            numpy.random.seed(seed)
+        return self.ppf(numpy.random.rand(n))
+
+    def non_central_moments(self, k: int) -> float | None:
+        return scipy.special.beta(self.a + k / self.c, self.b) / scipy.special.beta(self.a, self.b)
+
+    def central_moments(self, k: int) -> float | None:
+        µ1 = self.non_central_moments(1)
+        µ2 = self.non_central_moments(2)
+        µ3 = self.non_central_moments(3)
+        µ4 = self.non_central_moments(4)
+        if k == 1:
+            return 0
+        if k == 2:
+            return µ2 - µ1**2
+        if k == 3:
+            return µ3 - 3 * µ1 * µ2 + 2 * µ1**3
+        if k == 4:
+            return µ4 - 4 * µ1 * µ3 + 6 * µ1**2 * µ2 - 3 * µ1**4
+        return None
+
+    @property
+    def mean(self) -> float:
+        µ1 = self.non_central_moments(1)
+        return self.min + (self.max - self.min) * µ1
+
+    @property
+    def variance(self) -> float:
+        µ1 = self.non_central_moments(1)
+        µ2 = self.non_central_moments(2)
+        return (self.max - self.min) ** 2 * (µ2 - µ1**2)
+
+    @property
+    def standard_deviation(self) -> float:
+        return numpy.sqrt(self.variance)
+
+    @property
+    def skewness(self) -> float:
+        central_µ3 = self.central_moments(3)
+        µ1 = self.non_central_moments(1)
+        µ2 = self.non_central_moments(2)
+        std = numpy.sqrt(µ2 - µ1**2)
+        return central_µ3 / std**3
+
+    @property
+    def kurtosis(self) -> float:
+        central_µ4 = self.central_moments(4)
+        µ1 = self.non_central_moments(1)
+        µ2 = self.non_central_moments(2)
+        std = numpy.sqrt(µ2 - µ1**2)
+        return central_µ4 / std**4
+
+    @property
+    def median(self) -> float:
+        return self.ppf(0.5)
+
+    @property
+    def mode(self) -> float:
+        if self.a * self.c <= 1 or self.b <= 1:
+            standard_pdf = lambda z: -(z ** (self.a * self.c - 1) * (1 - z**self.c) ** (self.b - 1))
+            res = scipy.optimize.minimize_scalar(standard_pdf, bounds=(1e-6, 1 - 1e-6), method="bounded")
+            return self.min + (self.max - self.min) * res.x
+        z_mode = ((self.a * self.c - 1) / (self.a * self.c + self.b * self.c - self.c - 1)) ** (1 / self.c)
+        return self.min + (self.max - self.min) * z_mode
+
+    @property
+    def num_parameters(self) -> int:
+        return len(self.parameters)
+
+    def parameter_restrictions(self) -> bool:
+        v1 = self.a > 0
+        v2 = self.b > 0
+        v3 = self.c > 0
+        v4 = self.min < self.max
+        return v1 and v2 and v3 and v4
+
+    def get_parameters(self, continuous_measures) -> dict[str, float | int]:
+        def equations(initial_solution: tuple[float], continuous_measures) -> tuple[float]:
+            a, b, c, min_, max_ = initial_solution
+            E = lambda k: scipy.special.beta(a + k / c, b) / scipy.special.beta(a, b)
+            e1 = E(1)
+            e2 = E(2)
+            e3 = E(3)
+            e4 = E(4)
+            parametric_mean = e1 * (max_ - min_) + min_
+            parametric_variance = (e2 - e1**2) * (max_ - min_) ** 2
+            parametric_skewness = (e3 - 3 * e2 * e1 + 2 * e1**3) / ((e2 - e1**2)) ** 1.5
+            parametric_kurtosis = (e4 - 4 * e1 * e3 + 6 * e1**2 * e2 - 3 * e1**4) / ((e2 - e1**2)) ** 2
+            z_med = scipy.special.betaincinv(a, b, 0.5) ** (1 / c)
+            parametric_median = min_ + (max_ - min_) * z_med
+            eq1 = parametric_mean - continuous_measures.mean
+            eq2 = parametric_variance - continuous_measures.variance
+            eq3 = parametric_skewness - continuous_measures.skewness
+            eq4 = parametric_kurtosis - continuous_measures.kurtosis
+            eq5 = parametric_median - continuous_measures.median
+            return (eq1, eq2, eq3, eq4, eq5)
+
+        bounds = (
+            (1e-5, 1e-5, 1e-5, -numpy.inf, continuous_measures.mean),
+            (numpy.inf, numpy.inf, numpy.inf, continuous_measures.mean, numpy.inf),
+        )
+        x0 = (1, 1, 1, continuous_measures.min - 1e-3, continuous_measures.max + 1e-3)
+        args = [continuous_measures]
+        solution = scipy.optimize.least_squares(equations, x0=x0, bounds=bounds, args=args)
+        parameters = {
+            "a": solution.x[0],
+            "b": solution.x[1],
+            "c": solution.x[2],
+            "min": solution.x[3],
+            "max": solution.x[4],
+        }
+        return parameters
+
+
 class Moyal:
     def __init__(
         self,
@@ -7356,6 +7847,142 @@ class Semicircular:
         return parameters
 
 
+class ToppLeone:
+    def __init__(
+        self,
+        parameters: dict[str, int | float] = None,
+        continuous_measures=None,
+        init_parameters_examples=False,
+    ):
+        if continuous_measures is None and parameters is None and init_parameters_examples == False:
+            raise ValueError("You must initialize the distribution by providing one of the following: distribution parameters, a Continuous Measures [ContinuousMeasures] instance, or by setting init_parameters_examples to True.")
+        if continuous_measures != None:
+            self.parameters = self.get_parameters(continuous_measures=continuous_measures)
+        if parameters != None:
+            self.parameters = parameters
+        if init_parameters_examples:
+            self.parameters = self.parameters_example
+        self.alpha = self.parameters["alpha"]
+        self.min = self.parameters["min"]
+        self.max = self.parameters["max"]
+
+    @property
+    def name(self):
+        return "topp_leone"
+
+    @property
+    def parameters_example(self) -> dict[str, int | float]:
+        return {"alpha": 3, "min": 5, "max": 17}
+
+    def cdf(self, x: float | numpy.ndarray) -> float | numpy.ndarray:
+        z = lambda t: (t - self.min) / (self.max - self.min)
+        return (z(x) * (2 - z(x))) ** self.alpha
+
+    def pdf(self, x: float | numpy.ndarray) -> float | numpy.ndarray:
+        z = lambda t: (t - self.min) / (self.max - self.min)
+        return (2 * self.alpha * (1 - z(x)) * (z(x) * (2 - z(x))) ** (self.alpha - 1)) / (self.max - self.min)
+
+    def ppf(self, u: float | numpy.ndarray) -> float | numpy.ndarray:
+        result = self.min + (self.max - self.min) * (1 - numpy.sqrt(1 - u ** (1 / self.alpha)))
+        return result
+
+    def sample(self, n: int, seed: int | None = None) -> numpy.ndarray:
+        if seed:
+            numpy.random.seed(seed)
+        return self.ppf(numpy.random.rand(n))
+
+    def non_central_moments(self, k: int) -> float | None:
+        result = 0
+        for i in range(k + 1):
+            result += scipy.special.comb(k, i) * ((-1) ** i) * self.alpha * scipy.special.beta(self.alpha, 1 + i / 2)
+        return result
+
+    def central_moments(self, k: int) -> float | None:
+        µ1 = self.non_central_moments(1)
+        µ2 = self.non_central_moments(2)
+        µ3 = self.non_central_moments(3)
+        µ4 = self.non_central_moments(4)
+        if k == 1:
+            return 0
+        if k == 2:
+            return µ2 - µ1**2
+        if k == 3:
+            return µ3 - 3 * µ1 * µ2 + 2 * µ1**3
+        if k == 4:
+            return µ4 - 4 * µ1 * µ3 + 6 * µ1**2 * µ2 - 3 * µ1**4
+        return None
+
+    @property
+    def mean(self) -> float:
+        µ1 = self.non_central_moments(1)
+        return self.min + (self.max - self.min) * µ1
+
+    @property
+    def variance(self) -> float:
+        µ1 = self.non_central_moments(1)
+        µ2 = self.non_central_moments(2)
+        return (self.max - self.min) ** 2 * (µ2 - µ1**2)
+
+    @property
+    def standard_deviation(self) -> float:
+        return numpy.sqrt(self.variance)
+
+    @property
+    def skewness(self) -> float:
+        central_µ3 = self.central_moments(3)
+        µ1 = self.non_central_moments(1)
+        µ2 = self.non_central_moments(2)
+        std = numpy.sqrt(µ2 - µ1**2)
+        return central_µ3 / std**3
+
+    @property
+    def kurtosis(self) -> float:
+        central_µ4 = self.central_moments(4)
+        µ1 = self.non_central_moments(1)
+        µ2 = self.non_central_moments(2)
+        std = numpy.sqrt(µ2 - µ1**2)
+        return central_µ4 / std**4
+
+    @property
+    def median(self) -> float:
+        return self.ppf(0.5)
+
+    @property
+    def mode(self) -> float:
+        if self.alpha <= 1:
+            return self.min
+        z_mode = 1 - numpy.sqrt((self.alpha - 1) / (2 * self.alpha - 1))
+        return self.min + (self.max - self.min) * z_mode
+
+    @property
+    def num_parameters(self) -> int:
+        return len(self.parameters)
+
+    def parameter_restrictions(self) -> bool:
+        v1 = self.alpha > 0
+        v2 = self.min < self.max
+        return v1 and v2
+
+    def get_parameters(self, continuous_measures) -> dict[str, float | int]:
+        def equations(initial_solution: tuple[float], continuous_measures) -> tuple[float]:
+            alpha, min_, max_ = initial_solution
+            E = lambda k: sum(scipy.special.comb(k, i) * ((-1) ** i) * alpha * scipy.special.beta(alpha, 1 + i / 2) for i in range(k + 1))
+            parametric_mean = E(1) * (max_ - min_) + min_
+            parametric_variance = (E(2) - E(1) ** 2) * (max_ - min_) ** 2
+            parametric_skewness = (E(3) - 3 * E(2) * E(1) + 2 * E(1) ** 3) / ((E(2) - E(1) ** 2)) ** 1.5
+            eq1 = parametric_mean - continuous_measures.mean
+            eq2 = parametric_variance - continuous_measures.variance
+            eq3 = parametric_skewness - continuous_measures.skewness
+            return (eq1, eq2, eq3)
+
+        bounds = ((1e-5, -numpy.inf, continuous_measures.mean), (numpy.inf, continuous_measures.mean, numpy.inf))
+        x0 = (1, continuous_measures.min - 1e-3, continuous_measures.max + 1e-3)
+        args = [continuous_measures]
+        solution = scipy.optimize.least_squares(equations, x0=x0, bounds=bounds, args=args)
+        parameters = {"alpha": solution.x[0], "min": solution.x[1], "max": solution.x[2]}
+        return parameters
+
+
 class Trapezoidal:
     def __init__(
         self,
@@ -8100,6 +8727,7 @@ CONTINUOUS_DISTRIBUTIONS = {
     "alpha": Alpha,
     "arcsine": Arcsine,
     "argus": Argus,
+    "bates": Bates,
     "beta": Beta,
     "beta_prime": BetaPrime,
     "beta_prime_4p": BetaPrime4P,
@@ -8116,6 +8744,7 @@ CONTINUOUS_DISTRIBUTIONS = {
     "error_function": ErrorFunction,
     "exponential": Exponential,
     "exponential_2p": Exponential2P,
+    "exponentiated_kumaraswamy": ExponentiatedKumaraswamy,
     "f": F,
     "fatigue_life": FatigueLife,
     "folded_normal": FoldedNormal,
@@ -8149,6 +8778,7 @@ CONTINUOUS_DISTRIBUTIONS = {
     "loglogistic_3p": LogLogistic3P,
     "lognormal": LogNormal,
     "maxwell": Maxwell,
+    "mcdonald": McDonald,
     "moyal": Moyal,
     "nakagami": Nakagami,
     "non_central_chi_square": NonCentralChiSquare,
@@ -8163,6 +8793,7 @@ CONTINUOUS_DISTRIBUTIONS = {
     "reciprocal": Reciprocal,
     "rice": Rice,
     "semicircular": Semicircular,
+    "topp_leone": ToppLeone,
     "trapezoidal": Trapezoidal,
     "triangular": Triangular,
     "t_student": TStudent,
